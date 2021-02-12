@@ -1,0 +1,124 @@
+---
+title: "stockTest"
+author: "Reynard Verill"
+date: "2/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(tidyverse)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(readr)
+library(scales)
+library(glue)
+library(GGally)
+stock <- read_csv("data_input/stock.csv")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+stock$Date <- as.Date(stock$Date)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+glimpse(stock)
+stock %>% tail()
+((stock %>% filter(Date <= as.POSIXct("2018-01-01")) %>% tail(1) %>% select(SP500)/stock %>% filter(Date >= as.POSIXct("1990-01-01")) %>% head(1) %>% select(SP500) - 1) * 100) %>% round(2) %>% select(SP500) %>% head(1)
+
+glimpse(((stock %>% filter(Date <= as.POSIXct("2018-01-01")) %>% tail(1) %>% select(SP500)/stock %>% filter(Date >= as.POSIXct("1990-01-01")) %>% head(1) %>% select(SP500) - 1) * 100) %>% round(2))
+```
+
+```{r}
+label_percent <- label_dollar(suffix = '%' ,prefix = '')
+
+# stock[]
+stock_monthly <- stock %>%
+  filter(Date >= as.POSIXct("01-01-2000")) %>% 
+  mutate(pct_change = (stock$SP500/lag(stock$SP500) - 1) * 100, month = format(stock$Date, "%m")) %>%
+  group_by(month) %>%
+  summarise(avg.change = round(mean(pct_change, na.rm = TRUE), digits=3)) %>%
+  mutate(tooltip = glue("percent_change: {label_percent(avg.change)}")) %>%
+  ungroup()
+
+stock_monthly %>% head()
+
+```
+
+```{r}
+stock_monthly <- stock %>%
+  filter(Date >= as.POSIXct("1871-01-01")) %>% 
+  mutate(pct_change = (SP500/lag(SP500) - 1) * 100, month = format(stock$Date, "%m")) %>%
+  group_by(month) %>%
+  summarise(avg.change = round(mean(pct_change, na.rm = TRUE), digits=3)) %>%
+  mutate(tooltip = glue("percent_change: {label_percent(avg.change)}")) %>%
+  ungroup()
+
+monthly_change <- stock %>% 
+      mutate(pct_change = (SP500/lag(SP500) - 1) * 100, month = format(stock$Date, "%m"), real_price = stock$`Real Price`)
+monthly_change
+stock_monthly
+names(monthly_change) <- str_replace_all(names(monthly_change), c(" " = "_" , "," = "" ))
+
+monthly_change
+```
+
+
+```{r}
+#monthly chart data
+monthly_chart <- ggplot(stock_monthly, aes(x = avg.change, y = month,  text = tooltip)) +
+  geom_col(aes(fill = avg.change), show.legend = F) +
+  labs(title = "S&P500 return monthly",
+       subtitle = "For the period 01/01/1871 - 04/01/2018",
+       x = "Price change (in %)",
+       y = "Month",
+       caption = "Source: Robert Shiller"
+  ) +
+  scale_x_continuous(labels = label_percent) +
+  guides(fill= FALSE) +
+  geom_label(aes(label = avg.change), hjust = 1.05) +
+  scale_fill_continuous(low = "red", high = "black") +
+  theme_minimal()
+
+ggplotly(monthly_chart, tooltip = c("text")) %>%
+  config(displayModeBar = F, scrollzoom = T) %>%
+  layout(dragmode = "pan")
+```
+```{r}
+stock$SP500 %>% tail(1) - stock %>% subset(as.Date(stock$Date) == as.Date("2017-01-01")) %>% select(SP500)
+```
+
+
+```{r}
+ending <- stock %>% 
+  tail(1) %>%
+  select(SP500)
+ending - 100
+stock %>% subset(as.POSIXct(stock$Date) >= "2018-03-01"+ 1)
+(stock$SP500 %>% tail(1) - stock %>% filter(as.POSIXct(stock$Date) == as.POSIXct("01-03-2018")) %>% select(SP500))/
+                      stock %>% filter(as.POSIXct(stock$Date) == "01-01-2016") %>% select(SP500)
+
+stock
+```
+```{r}
+((stock$SP500 %>% tail(1) - stock %>% subset(as.POSIXct(stock$Date) > as.POSIXct("2018-03-01") & as.POSIXct(stock$Date) < as.POSIXct("2018-03-02")) %>% select(SP500))/
+      stock %>% subset(as.POSIXct(stock$Date) > as.POSIXct("2018-03-01") & as.POSIXct(stock$Date) < as.POSIXct("2018-03-02")) %>% select(SP500))*100
+```
+
