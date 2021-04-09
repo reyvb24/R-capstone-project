@@ -12,6 +12,7 @@ library(scales)
 library(glue)
 library(GGally)
 library(lubridate)
+library(reticulate)
 
 stock <- read_csv("data_input/stock.csv")
 
